@@ -3,7 +3,6 @@ body {
     color: aliceblue;
 }
 #speepa{
-    width: 1920px;
-    height: 100px;
+    min-width: 100%;
     background-color: rgb(2, 2, 2);
 }
