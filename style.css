@@ -4,5 +4,6 @@ body {
 }
 #speepa{
     min-width: 100%;
+    height: 50px;
     background-color: rgb(2, 2, 2);
 }
