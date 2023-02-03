@@ -1,6 +1,10 @@
 body {
     background-color: black;
     color: aliceblue;
+    
+}
+img{
+    width: 300px;
 }
 #speepa{
     min-width: 100%;
