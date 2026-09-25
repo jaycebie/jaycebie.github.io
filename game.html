@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Gear</title>
+<style>
+  :root {
+    --bg: #15171c;
+    --panel: #1f232b;
+    --panel-2: #272c36;
+    --border: #353b47;
+    --text: #e8e6e1;
+    --muted: #9a9ea8;
+    --gold: #f2c14e;
+    --gray: #b4b8bf;
+    --green: #5fd068;
+    --special: #c38cf0;
+    --danger: #e0645c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 16px; }
+  header {
+    display: flex; flex-wrap: wrap; gap: 8px 16px;
+    align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  h1 { margin: 0; font-size: 24px; letter-spacing: .5px; }
+  h2 { margin: 0 0 10px; font-size: 16px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .hud { display: flex; gap: 16px; color: var(--muted); font-size: 14px; }
+  .hud b { color: var(--gold); }
+  .layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px; min-width: 0;
+  }
+  .side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  /* Paper doll */
+  .doll {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(70px, 22vw, 150px) minmax(0, 1fr);
+    grid-template-areas:
+      "head fig necklace"
+      "chest fig cape"
+      "legs fig ring1"
+      "feet fig ring2"
+      "sword fig shield";
+    gap: 8px;
+  }
+  .fig { grid-area: fig; display: flex; align-items: center; justify-content: center; }
+  .hero {
+    width: 100%; height: auto; image-rendering: pixelated;
+    animation: bob 1.6s steps(1) infinite;
+  }
+  @keyframes bob { 50% { transform: translateY(2%); } }
+  @media (prefers-reduced-motion: reduce) { .hero { animation: none; } }
+
+  .icon { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+  .icon-box {
+    flex: none; width: 36px; height: 36px; padding: 2px;
+    border-radius: 6px; background: #1a1d24;
+  }
+  .slot.empty .icon { opacity: .25; filter: grayscale(1); }
+  .bg-gray { background: #30343b; }
+  .bg-green { background: #24402a; }
+  .bg-special { background: #3a2a4a; }
+
+  .slot {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px; min-height: 58px;
+    cursor: pointer; text-align: left; color: inherit; font: inherit;
+    min-width: 0; display: flex; gap: 8px; align-items: center;
+  }
+  .slot .txt { min-width: 0; }
+  @media (max-width: 440px) {
+    .slot { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .slot .txt { width: 100%; }
+  }
+  .card-head { display: flex; gap: 10px; align-items: center; }
+  .card-head .icon-box { width: 44px; height: 44px; }
+  .slot:hover { border-color: #56607a; }
+  .slot.selected { outline: 2px solid var(--gold); outline-offset: -1px; }
+  .slot.empty { opacity: .6; }
+  .slot .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .slot .nm { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot .st { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .detail { margin-top: 12px; }
+  .r-gray { color: var(--gray); }
+  .r-green { color: var(--green); }
+  .r-special { color: var(--special); }
+  .b-gray { border-left: 3px solid var(--gray); }
+  .b-green { border-left: 3px solid var(--green); }
+  .b-special { border-left: 3px solid var(--special); }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+  .stats .k { color: var(--muted); }
+  .stats .v { text-align: right; font-variant-numeric: tabular-nums; }
+  .stats .total { font-weight: 700; font-size: 17px; color: var(--text); }
+  .stats hr { grid-column: 1 / -1; border: 0; border-top: 1px solid var(--border); margin: 6px 0; width: 100%; }
+
+  /* Item cards */
+  .card {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .card + .card { margin-top: 8px; }
+  .card .nm { font-weight: 700; }
+  .card .meta { font-size: 12px; color: var(--muted); }
+  .card ul { margin: 6px 0; padding-left: 18px; }
+  .card li { font-size: 14px; }
+  .delta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .up { color: var(--green); }
+  .down { color: var(--danger); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  button.act {
+    background: #323846; color: var(--text); border: 1px solid #454d5e;
+    border-radius: 6px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  button.act:hover:not(:disabled) { background: #3c4455; }
+  button.act:disabled { opacity: .45; cursor: not-allowed; }
+  button.act.primary { background: #3a5a3e; border-color: #4f7a54; }
+  button.act.primary:hover:not(:disabled) { background: #456c4a; }
+  button.act.sell { background: #5a4a2a; border-color: #7a6538; }
+  button.act.sell:hover:not(:disabled) { background: #6b5831; }
+  .empty-msg { color: var(--muted); font-size: 14px; }
+
+  .storage { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+  .storage .card + .card { margin-top: 0; }
+  section.panel.full { margin-top: 16px; }
+  .row-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .count { color: var(--muted); font-size: 13px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+    background: #2d333f; border: 1px solid #4a5263; color: var(--text);
+    padding: 10px 16px; border-radius: 8px; font-size: 14px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+    max-width: calc(100% - 32px);
+  }
+  .toast.show { opacity: 1; }
+  footer { margin-top: 20px; text-align: center; }
+  footer button { background: none; border: 0; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Daily Gear</h1>
+    <div class="hud">
+      <span>Gold: <b id="gold">0</b></span>
+      <span id="next"></span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>Character</h2>
+      <div class="doll" id="doll"></div>
+      <div class="detail" id="detail"></div>
+    </section>
+
+    <div class="side">
+      <section class="panel">
+        <h2>Stats</h2>
+        <div class="stats" id="stats"></div>
+      </section>
+      <section class="panel">
+        <h2>Today's Drop</h2>
+        <div id="pending"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel full">
+    <div class="row-head">
+      <h2>Storage</h2>
+      <span class="count" id="storageCount"></span>
+    </div>
+    <div id="storage"></div>
+  </section>
+
+  <footer><button id="reset">Reset game</button></footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SAVE_KEY = 'dailyGear.v1';
+const STORAGE_MAX = 20;
+const GREEN_CHANCE = 0.25;
+const SELL_PRICE = { gray: 5, green: 20 };
+
+// Equipment slots on the character, and which item type fits each.
+const SLOTS = {
+  head:     { label: 'Head',     type: 'head' },
+  chest:    { label: 'Chest',    type: 'chest' },
+  legs:     { label: 'Legs',     type: 'legs' },
+  feet:     { label: 'Feet',     type: 'feet' },
+  necklace: { label: 'Necklace', type: 'necklace' },
+  cape:     { label: 'Cape',     type: 'cape' },
+  ring1:    { label: 'Ring 1',   type: 'ring' },
+  ring2:    { label: 'Ring 2',   type: 'ring' },
+  sword:    { label: 'Sword',    type: 'sword' },
+  shield:   { label: 'Shield',   type: 'shield' },
+};
+
+// Item types that can drop, and their main stat (jewelry has none).
+const TYPES = {
+  head:     { base: 'armor',  names: ['Helm', 'Cap', 'Hood', 'Coif'] },
+  chest:    { base: 'armor',  names: ['Tunic', 'Breastplate', 'Hauberk', 'Jerkin'] },
+  legs:     { base: 'armor',  names: ['Greaves', 'Leggings', 'Trousers', 'Chausses'] },
+  feet:     { base: 'armor',  names: ['Boots', 'Sabatons', 'Sandals', 'Treads'] },
+  shield:   { base: 'armor',  names: ['Shield', 'Buckler', 'Kite Shield', 'Targe'] },
+  sword:    { base: 'damage', names: ['Sword', 'Blade', 'Saber', 'Longsword'] },
+  ring:     { base: null,     names: ['Ring', 'Band', 'Loop', 'Signet'] },
+  necklace: { base: null,     names: ['Amulet', 'Pendant', 'Choker', 'Torc'] },
+};
+const ADJ = {
+  gray:  ['Worn', 'Rusty', 'Tattered', 'Cracked', 'Dull', 'Frayed', 'Old', 'Plain'],
+  green: ['Sturdy', 'Fine', 'Polished', 'Reinforced', 'Keen', 'Verdant', 'Hardy', 'Tempered'],
+};
+const STAT_LABEL = { armor: 'Armor', damage: 'Physical Damage', defense: 'Defense', strength: 'Strength' };
+const RARITY_LABEL = { gray: 'Gray', green: 'Green', special: 'Special' };
+
+// ---------- Pixel art ----------
+// Each sprite is a grid of palette letters ('.' = empty). A dark outline is
+// added automatically around every filled pixel.
+const PALETTE = {
+  // character
+  h: '#6e4630', H: '#8f5d3f', s: '#f2c8a2', S: '#d9a37e', e: '#2a2530', n: '#b8675c',
+  t: '#3f7fa3', T: '#2f6388', p: '#4f4648', P: '#3f3739',
+  // metal
+  l: '#dfe4e8', m: '#a4adb6', d: '#6b737c',
+  // gold
+  y: '#e9c14c', Y: '#b58c2c',
+  // leather
+  k: '#7a4a2c', K: '#9c6340', D: '#4a2c1a',
+  // gems
+  g: '#7fe0ec', G: '#2f9fb5', r: '#d8505f', R: '#8f2a3c', w: '#ffffff',
+  // cape cloth
+  c: '#9150b8', C: '#6c3790', L: '#b980da',
+  // shield face
+  b: '#3f6fa3', B: '#2d5580',
+};
+const OUTLINE = '#1c1a22';
+
+const SPRITES = {
+  hero: [
+    '....hhhhhhhh',
+    '...hhhhhhhhHh',
+    '..hhhhhhhhhhHh',
+    '..hhhhhhhhhhhh',
+    '..hhhssssssHhh',
+    '..hhsesssseshh',
+    '..hhsssssssshh',
+    '..hhsssnnssshh',
+    '...hhSssssShh',
+    '......SSSS',
+    '...ttttSStttt',
+    '..tttttttttttt',
+    '..tTttttttttTt',
+    '..tTttttttttTt',
+    '..tTkkkyykkkTt',
+    '..sTttttttttTs',
+    '..s.pppppppp.s',
+    '....pppPPppp',
+    '....ppp..ppp',
+    '....ppp..ppp',
+    '....ppP..ppP',
+    '....kkk..kkk',
+    '...kkkk..kkkk',
+  ],
+  head: [
+    '',
+    '',
+    '......llmm',
+    '....lllmmmmm',
+    '...llmmmmmmmd',
+    '...lmmmmmmmmd',
+    '...lmmmmmmmmd',
+    '...lmmmmmmmmd',
+    '..dddddddddddd',
+    '...lm..mm..md',
+    '...lm..mm..md',
+    '...lm......md',
+    '...dd......dd',
+  ],
+  chest: [
+    '',
+    '',
+    '...mm......mm',
+    '..mmmlllllmmmd',
+    '..mmmmlllmmmmd',
+    '...mmmmlmmmmd',
+    '...mmmmmmmmmd',
+    '...mmmmmmmmmd',
+    '...yyyyyyyyyy',
+    '...mmmmmmmmmd',
+    '...mmmmmmmmdd',
+    '...dddddddddd',
+  ],
+  legs: [
+    '',
+    '',
+    '....yyyyyyyy',
+    '....mmmmmmmd',
+    '....lmmmmmmd',
+    '....lmmmmmmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....ddd..ddd',
+  ],
+  feet: [
+    '',
+    '',
+    '',
+    '.....kkkK',
+    '.....kkkK',
+    '.....DDDD',
+    '.....kkkK',
+    '.....kkkK',
+    '.....kkkK',
+    '.....kkkK',
+    '.....kkkkKKK',
+    '.....kkkkkkkK',
+    '.....DDDDDDDD',
+  ],
+  ring: [
+    '',
+    '',
+    '',
+    '.......gg',
+    '.......GG',
+    '......yyyy',
+    '.....yy..yy',
+    '....yy....yY',
+    '....y......Y',
+    '....y......Y',
+    '....yy....YY',
+    '.....yY..YY',
+    '......YYYY',
+  ],
+  necklace: [
+    '',
+    '..y..........y',
+    '..y..........y',
+    '...y........y',
+    '...y........y',
+    '....y......y',
+    '.....y....y',
+    '......y..y',
+    '.......yy',
+    '.......rr',
+    '......rwrR',
+    '.....rrrrRR',
+    '......rrRR',
+    '.......RR',
+  ],
+  cape: [
+    '',
+    '...yccccccccy',
+    '...LccccccccC',
+    '..LcccccccccCC',
+    '..LcccccccccCC',
+    '..LccccccccCCC',
+    '..LccccccccCCC',
+    '.LcccccccccCCCC',
+    '.LcccccccccCCCC',
+    '.LccccccccCCCCC',
+    '.LccccccccCCCCC',
+    '.LcccccccCCCCCC',
+    'LccccccccCCCCCCC',
+    'Lcc.ccc.cCC.CCCC',
+  ],
+  sword: [
+    '',
+    '.............lm',
+    '............lm',
+    '...........lm',
+    '..........lm',
+    '.........lm',
+    '........lm',
+    '.......lm',
+    '...y..lm',
+    '....ylm',
+    '.....y',
+    '....k.y',
+    '...k...y',
+    '..Y',
+  ],
+  shield: [
+    '',
+    '..mmmmmmmmmmmm',
+    '..mbbbbbbbbbBm',
+    '..mbbbbyybbbBm',
+    '..mbbbbyybbbBm',
+    '..mbbyyyyyyBBm',
+    '..mbbbbyybbBBm',
+    '..mbbbbyybbBBm',
+    '...mbbbyybBBm',
+    '...mbbbyybBBm',
+    '....mbbbbBBm',
+    '.....mbbBBm',
+    '......mBBm',
+    '.......mm',
+  ],
+};
+
+// Renders a sprite to a PNG data URL (once), with a 1px outline border.
+const spriteCache = {};
+function spriteUrl(name) {
+  if (spriteCache[name]) return spriteCache[name];
+  const rows = SPRITES[name];
+  const w = Math.max(16, ...rows.map(r => r.length)) + 2;
+  const h = Math.max(16, rows.length) + 2;
+  const filled = (x, y) => rows[y - 1] && rows[y - 1][x - 1] && rows[y - 1][x - 1] !== '.';
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let color = null;
+      if (filled(x, y)) color = PALETTE[rows[y - 1][x - 1]];
+      else if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) color = OUTLINE;
+      if (color) { ctx.fillStyle = color; ctx.fillRect(x, y, 1, 1); }
+    }
+  }
+  return (spriteCache[name] = cv.toDataURL());
+}
+const icon = (type, cls = 'icon') => `<img class="${cls}" src="${spriteUrl(type)}" alt="">`;
+
+const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const cap = s => s[0].toUpperCase() + s.slice(1);
+
+function todayKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function newState() {
+  const equipped = {};
+  for (const k in SLOTS) equipped[k] = null;
+  equipped.cape = { id: 1, type: 'cape', rarity: 'special', name: "Traveler's Cape", defense: 1 };
+  return { gold: 0, equipped, storage: [], pending: [], lastDrop: '', nextId: 2 };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return newState();
+}
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+let state = load();
+let selected = null; // equipped slot key currently shown in the detail box
+
+function rollItem() {
+  const type = pick(Object.keys(TYPES));
+  const rarity = Math.random() < GREEN_CHANCE ? 'green' : 'gray';
+  const def = TYPES[type];
+  const item = { id: state.nextId++, type, rarity, name: `${pick(ADJ[rarity])} ${pick(def.names)}` };
+
+  // Main stat: gray 1-10, green 11-20.
+  if (def.base) item[def.base] = rarity === 'green' ? rand(11, 20) : rand(1, 10);
+
+  // Extra stats: gray 1-5, green 6-10. Green gets one more extra than gray.
+  const extras = (def.base ? 0 : 1) + (rarity === 'green' ? 1 : 0);
+  for (let i = 0; i < extras; i++) {
+    const stat = pick(['defense', 'strength']);
+    item[stat] = (item[stat] || 0) + (rarity === 'green' ? rand(6, 10) : rand(1, 5));
+  }
+  return item;
+}
+
+function checkDaily() {
+  const today = todayKey();
+  if (state.lastDrop !== today) {
+    state.pending.push(rollItem());
+    state.lastDrop = today;
+    save();
+  }
+}
+
+function statLines(item) {
+  return ['armor', 'damage', 'defense', 'strength']
+    .filter(s => item[s])
+    .map(s => `+${item[s]} ${STAT_LABEL[s]}`);
+}
+
+function totals(equipped) {
+  const t = { armor: 0, damage: 0, defense: 0, strength: 0 };
+  for (const k in equipped) {
+    const it = equipped[k];
+    if (it) for (const s in t) t[s] += it[s] || 0;
+  }
+  t.totalArmor = t.armor + t.defense;
+  t.totalDamage = t.damage + t.strength;
+  return t;
+}
+
+function slotsFor(type) {
+  return Object.keys(SLOTS).filter(k => SLOTS[k].type === type);
+}
+
+// How total armor/damage would change if item were equipped into slotKey.
+function deltaHtml(item, slotKey) {
+  const before = totals(state.equipped);
+  const after = totals({ ...state.equipped, [slotKey]: item });
+  const fmt = (n, label) => n === 0 ? null
+    : `<span class="${n > 0 ? 'up' : 'down'}">${n > 0 ? '+' : ''}${n} ${label}</span>`;
+  const parts = [fmt(after.totalArmor - before.totalArmor, 'armor'), fmt(after.totalDamage - before.totalDamage, 'damage')].filter(Boolean);
+  return parts.length ? parts.join(', ') : 'no change';
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---------- Actions ----------
+function equip(source, idx, slotKey) {
+  const item = source === 'pending' ? state.pending[idx] : state.storage[idx];
+  const old = state.equipped[slotKey];
+  if (source === 'storage') {
+    if (old) state.storage[idx] = old; else state.storage.splice(idx, 1);
+  } else {
+    if (old && state.storage.length >= STORAGE_MAX) {
+      toast('Storage is full. Sell something first to make room for your old item.');
+      return;
+    }
+    state.pending.splice(idx, 1);
+    if (old) state.storage.push(old);
+  }
+  state.equipped[slotKey] = item;
+  toast(`Equipped ${item.name}` + (old ? ` (${old.name} moved to storage)` : ''));
+  commit();
+}
+
+function store(idx) {
+  if (state.storage.length >= STORAGE_MAX) { toast('Storage is full.'); return; }
+  const [item] = state.pending.splice(idx, 1);
+  state.storage.push(item);
+  toast(`Stored ${item.name}`);
+  commit();
+}
+
+function sell(source, idx) {
+  const list = source === 'pending' ? state.pending : state.storage;
+  const [item] = list.splice(idx, 1);
+  const price = SELL_PRICE[item.rarity] || 0;
+  state.gold += price;
+  toast(`Sold ${item.name} for ${price} gold`);
+  commit();
+}
+
+function unequip(slotKey) {
+  if (state.storage.length >= STORAGE_MAX) { toast('Storage is full.'); return; }
+  const item = state.equipped[slotKey];
+  state.equipped[slotKey] = null;
+  state.storage.push(item);
+  selected = null;
+  toast(`Moved ${item.name} to storage`);
+  commit();
+}
+
+function commit() { save(); render(); }
+
+// ---------- Rendering ----------
+function itemCard(item, source, idx) {
+  let actions = '';
+  if (source) {
+    const slots = slotsFor(item.type);
+    const equipBtns = slots.map(k =>
+      `<button class="act primary" data-act="equip" data-src="${source}" data-idx="${idx}" data-slot="${k}">${slots.length > 1 ? `Equip (${SLOTS[k].label})` : 'Equip'}</button>`
+    ).join('');
+    const storeBtn = source === 'pending'
+      ? `<button class="act" data-act="store" data-idx="${idx}" ${state.storage.length >= STORAGE_MAX ? 'disabled' : ''}>Store</button>`
+      : '';
+    const sellBtn = `<button class="act sell" data-act="sell" data-src="${source}" data-idx="${idx}">Sell (${SELL_PRICE[item.rarity]}g)</button>`;
+    const deltas = slots.map(k =>
+      `<div>${slots.length > 1 ? SLOTS[k].label + ': ' : 'If equipped: '}${deltaHtml(item, k)}</div>`).join('');
+    actions = `<div class="delta">${deltas}</div><div class="btns">${equipBtns}${storeBtn}${sellBtn}</div>`;
+  }
+  return `<div class="card b-${item.rarity}">
+    <div class="card-head">
+      <div class="icon-box bg-${item.rarity}">${icon(item.type)}</div>
+      <div>
+        <div class="nm r-${item.rarity}">${esc(item.name)}</div>
+        <div class="meta">${RARITY_LABEL[item.rarity]} ${cap(item.type)}</div>
+      </div>
+    </div>
+    <ul>${statLines(item).map(l => `<li>${l}</li>`).join('')}</ul>
+    ${actions}
+  </div>`;
+}
+
+function render() {
+  document.getElementById('gold').textContent = state.gold;
+
+  // Paper doll
+  const doll = Object.keys(SLOTS).map(k => {
+    const it = state.equipped[k];
+    const cls = ['slot', it ? `b-${it.rarity}` : 'empty', selected === k ? 'selected' : ''].join(' ');
+    return `<button class="${cls}" style="grid-area:${k}" data-act="select" data-slot="${k}">
+      <div class="icon-box ${it ? `bg-${it.rarity}` : ''}">${icon(SLOTS[k].type)}</div>
+      <div class="txt">
+        <div class="lbl">${SLOTS[k].label}</div>
+        ${it ? `<div class="nm r-${it.rarity}">${esc(it.name)}</div><div class="st">${statLines(it).join(', ')}</div>`
+             : `<div class="st">Empty</div>`}
+      </div>
+    </button>`;
+  }).join('');
+  document.getElementById('doll').innerHTML = doll + `<div class="fig">${icon('hero', 'hero')}</div>`;
+
+  // Detail for the selected equipped item
+  const det = document.getElementById('detail');
+  const sel = selected && state.equipped[selected];
+  det.innerHTML = !sel ? '' : itemCard(sel) + (sel.type === 'cape' ? ''
+    : `<div class="btns" style="margin-top:8px"><button class="act" data-act="unequip" data-slot="${selected}">Unequip to storage</button></div>`);
+
+  // Stats
+  const t = totals(state.equipped);
+  document.getElementById('stats').innerHTML = `
+    <span class="k">Armor (from gear)</span><span class="v">${t.armor}</span>
+    <span class="k">+ Defense</span><span class="v">${t.defense}</span>
+    <span class="k total">Total Armor</span><span class="v total">${t.totalArmor}</span>
+    <hr>
+    <span class="k">Physical Damage (from sword)</span><span class="v">${t.damage}</span>
+    <span class="k">+ Strength</span><span class="v">${t.strength}</span>
+    <span class="k total">Total Damage</span><span class="v total">${t.totalDamage}</span>`;
+
+  // Pending drops
+  document.getElementById('pending').innerHTML = state.pending.length
+    ? state.pending.map((it, i) => itemCard(it, 'pending', i)).join('')
+    : `<div class="empty-msg">You've claimed today's gear. Come back tomorrow!</div>`;
+
+  // Storage
+  document.getElementById('storageCount').textContent = `${state.storage.length} / ${STORAGE_MAX}`;
+  document.getElementById('storage').innerHTML = state.storage.length
+    ? `<div class="storage">${state.storage.map((it, i) => itemCard(it, 'storage', i)).join('')}</div>`
+    : `<div class="empty-msg">Nothing stored yet.</div>`;
+}
+
+function tickCountdown() {
+  const now = new Date();
+  if (state.lastDrop !== todayKey(now)) { checkDaily(); render(); }
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const s = Math.floor((midnight - now) / 1000);
+  const hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60), ss = s % 60;
+  document.getElementById('next').textContent =
+    `Next drop in ${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || b.disabled) return;
+  const { act, src, slot } = b.dataset;
+  const idx = Number(b.dataset.idx);
+  if (act === 'select') { selected = selected === slot || !state.equipped[slot] ? null : slot; render(); }
+  else if (act === 'equip') equip(src, idx, slot);
+  else if (act === 'store') store(idx);
+  else if (act === 'sell') sell(src, idx);
+  else if (act === 'unequip') unequip(slot);
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  if (confirm('Reset your character? All gear and gold will be lost.')) {
+    state = newState();
+    selected = null;
+    checkDaily();
+    commit();
+  }
+});
+
+checkDaily();
+render();
+tickCountdown();
+setInterval(tickCountdown, 1000);
+</script>
+</body>
+</html>
