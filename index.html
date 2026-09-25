@@ -56,13 +56,36 @@
     gap: 8px;
   }
   .fig { grid-area: fig; display: flex; align-items: center; justify-content: center; }
-  .fig svg { width: 100%; height: auto; max-height: 360px; }
+  .hero {
+    width: 100%; height: auto; image-rendering: pixelated;
+    animation: bob 1.6s steps(1) infinite;
+  }
+  @keyframes bob { 50% { transform: translateY(2%); } }
+  @media (prefers-reduced-motion: reduce) { .hero { animation: none; } }
+
+  .icon { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+  .icon-box {
+    flex: none; width: 36px; height: 36px; padding: 2px;
+    border-radius: 6px; background: #1a1d24;
+  }
+  .slot.empty .icon { opacity: .25; filter: grayscale(1); }
+  .bg-gray { background: #30343b; }
+  .bg-green { background: #24402a; }
+  .bg-special { background: #3a2a4a; }
+
   .slot {
     background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 8px; min-height: 58px;
+    border-radius: 8px; padding: 6px; min-height: 58px;
     cursor: pointer; text-align: left; color: inherit; font: inherit;
-    min-width: 0;
+    min-width: 0; display: flex; gap: 8px; align-items: center;
   }
+  .slot .txt { min-width: 0; }
+  @media (max-width: 440px) {
+    .slot { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .slot .txt { width: 100%; }
+  }
+  .card-head { display: flex; gap: 10px; align-items: center; }
+  .card-head .icon-box { width: 44px; height: 44px; }
   .slot:hover { border-color: #56607a; }
   .slot.selected { outline: 2px solid var(--gold); outline-offset: -1px; }
   .slot.empty { opacity: .6; }
@@ -207,6 +230,217 @@ const ADJ = {
 };
 const STAT_LABEL = { armor: 'Armor', damage: 'Physical Damage', defense: 'Defense', strength: 'Strength' };
 const RARITY_LABEL = { gray: 'Gray', green: 'Green', special: 'Special' };
+
+// ---------- Pixel art ----------
+// Each sprite is a grid of palette letters ('.' = empty). A dark outline is
+// added automatically around every filled pixel.
+const PALETTE = {
+  // character
+  h: '#6e4630', H: '#8f5d3f', s: '#f2c8a2', S: '#d9a37e', e: '#2a2530', n: '#b8675c',
+  t: '#3f7fa3', T: '#2f6388', p: '#4f4648', P: '#3f3739',
+  // metal
+  l: '#dfe4e8', m: '#a4adb6', d: '#6b737c',
+  // gold
+  y: '#e9c14c', Y: '#b58c2c',
+  // leather
+  k: '#7a4a2c', K: '#9c6340', D: '#4a2c1a',
+  // gems
+  g: '#7fe0ec', G: '#2f9fb5', r: '#d8505f', R: '#8f2a3c', w: '#ffffff',
+  // cape cloth
+  c: '#9150b8', C: '#6c3790', L: '#b980da',
+  // shield face
+  b: '#3f6fa3', B: '#2d5580',
+};
+const OUTLINE = '#1c1a22';
+
+const SPRITES = {
+  hero: [
+    '....hhhhhhhh',
+    '...hhhhhhhhHh',
+    '..hhhhhhhhhhHh',
+    '..hhhhhhhhhhhh',
+    '..hhhssssssHhh',
+    '..hhsesssseshh',
+    '..hhsssssssshh',
+    '..hhsssnnssshh',
+    '...hhSssssShh',
+    '......SSSS',
+    '...ttttSStttt',
+    '..tttttttttttt',
+    '..tTttttttttTt',
+    '..tTttttttttTt',
+    '..tTkkkyykkkTt',
+    '..sTttttttttTs',
+    '..s.pppppppp.s',
+    '....pppPPppp',
+    '....ppp..ppp',
+    '....ppp..ppp',
+    '....ppP..ppP',
+    '....kkk..kkk',
+    '...kkkk..kkkk',
+  ],
+  head: [
+    '',
+    '',
+    '......llmm',
+    '....lllmmmmm',
+    '...llmmmmmmmd',
+    '...lmmmmmmmmd',
+    '...lmmmmmmmmd',
+    '...lmmmmmmmmd',
+    '..dddddddddddd',
+    '...lm..mm..md',
+    '...lm..mm..md',
+    '...lm......md',
+    '...dd......dd',
+  ],
+  chest: [
+    '',
+    '',
+    '...mm......mm',
+    '..mmmlllllmmmd',
+    '..mmmmlllmmmmd',
+    '...mmmmlmmmmd',
+    '...mmmmmmmmmd',
+    '...mmmmmmmmmd',
+    '...yyyyyyyyyy',
+    '...mmmmmmmmmd',
+    '...mmmmmmmmdd',
+    '...dddddddddd',
+  ],
+  legs: [
+    '',
+    '',
+    '....yyyyyyyy',
+    '....mmmmmmmd',
+    '....lmmmmmmd',
+    '....lmmmmmmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....lmd..lmd',
+    '....ddd..ddd',
+  ],
+  feet: [
+    '',
+    '',
+    '',
+    '.....kkkK',
+    '.....kkkK',
+    '.....DDDD',
+    '.....kkkK',
+    '.....kkkK',
+    '.....kkkK',
+    '.....kkkK',
+    '.....kkkkKKK',
+    '.....kkkkkkkK',
+    '.....DDDDDDDD',
+  ],
+  ring: [
+    '',
+    '',
+    '',
+    '.......gg',
+    '.......GG',
+    '......yyyy',
+    '.....yy..yy',
+    '....yy....yY',
+    '....y......Y',
+    '....y......Y',
+    '....yy....YY',
+    '.....yY..YY',
+    '......YYYY',
+  ],
+  necklace: [
+    '',
+    '..y..........y',
+    '..y..........y',
+    '...y........y',
+    '...y........y',
+    '....y......y',
+    '.....y....y',
+    '......y..y',
+    '.......yy',
+    '.......rr',
+    '......rwrR',
+    '.....rrrrRR',
+    '......rrRR',
+    '.......RR',
+  ],
+  cape: [
+    '',
+    '...yccccccccy',
+    '...LccccccccC',
+    '..LcccccccccCC',
+    '..LcccccccccCC',
+    '..LccccccccCCC',
+    '..LccccccccCCC',
+    '.LcccccccccCCCC',
+    '.LcccccccccCCCC',
+    '.LccccccccCCCCC',
+    '.LccccccccCCCCC',
+    '.LcccccccCCCCCC',
+    'LccccccccCCCCCCC',
+    'Lcc.ccc.cCC.CCCC',
+  ],
+  sword: [
+    '',
+    '.............lm',
+    '............lm',
+    '...........lm',
+    '..........lm',
+    '.........lm',
+    '........lm',
+    '.......lm',
+    '...y..lm',
+    '....ylm',
+    '.....y',
+    '....k.y',
+    '...k...y',
+    '..Y',
+  ],
+  shield: [
+    '',
+    '..mmmmmmmmmmmm',
+    '..mbbbbbbbbbBm',
+    '..mbbbbyybbbBm',
+    '..mbbbbyybbbBm',
+    '..mbbyyyyyyBBm',
+    '..mbbbbyybbBBm',
+    '..mbbbbyybbBBm',
+    '...mbbbyybBBm',
+    '...mbbbyybBBm',
+    '....mbbbbBBm',
+    '.....mbbBBm',
+    '......mBBm',
+    '.......mm',
+  ],
+};
+
+// Renders a sprite to a PNG data URL (once), with a 1px outline border.
+const spriteCache = {};
+function spriteUrl(name) {
+  if (spriteCache[name]) return spriteCache[name];
+  const rows = SPRITES[name];
+  const w = Math.max(16, ...rows.map(r => r.length)) + 2;
+  const h = Math.max(16, rows.length) + 2;
+  const filled = (x, y) => rows[y - 1] && rows[y - 1][x - 1] && rows[y - 1][x - 1] !== '.';
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let color = null;
+      if (filled(x, y)) color = PALETTE[rows[y - 1][x - 1]];
+      else if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) color = OUTLINE;
+      if (color) { ctx.fillStyle = color; ctx.fillRect(x, y, 1, 1); }
+    }
+  }
+  return (spriteCache[name] = cv.toDataURL());
+}
+const icon = (type, cls = 'icon') => `<img class="${cls}" src="${spriteUrl(type)}" alt="">`;
 
 const rand = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -371,34 +605,16 @@ function itemCard(item, source, idx) {
     actions = `<div class="delta">${deltas}</div><div class="btns">${equipBtns}${storeBtn}${sellBtn}</div>`;
   }
   return `<div class="card b-${item.rarity}">
-    <div class="nm r-${item.rarity}">${esc(item.name)}</div>
-    <div class="meta">${RARITY_LABEL[item.rarity]} ${cap(item.type)}</div>
+    <div class="card-head">
+      <div class="icon-box bg-${item.rarity}">${icon(item.type)}</div>
+      <div>
+        <div class="nm r-${item.rarity}">${esc(item.name)}</div>
+        <div class="meta">${RARITY_LABEL[item.rarity]} ${cap(item.type)}</div>
+      </div>
+    </div>
     <ul>${statLines(item).map(l => `<li>${l}</li>`).join('')}</ul>
     ${actions}
   </div>`;
-}
-
-function figureSvg() {
-  const eq = state.equipped;
-  const col = r => ({ gray: '#8e939b', green: '#4caf50', special: '#9b59b6' }[r]);
-  const c = (slot, fallback) => eq[slot] ? col(eq[slot].rarity) : fallback;
-  return `<svg viewBox="0 0 100 200" role="img" aria-label="Your character">
-    ${eq.cape ? `<path d="M34 50 L66 50 L80 172 L20 172 Z" fill="${col(eq.cape.rarity)}" opacity=".85"/>` : ''}
-    <rect x="23" y="50" width="10" height="44" rx="5" fill="${c('chest', '#7b7266')}"/>
-    <rect x="67" y="50" width="10" height="44" rx="5" fill="${c('chest', '#7b7266')}"/>
-    <rect x="34" y="46" width="32" height="52" rx="6" fill="${c('chest', '#7b7266')}"/>
-    <rect x="36" y="96" width="12" height="52" rx="3" fill="${c('legs', '#564d44')}"/>
-    <rect x="52" y="96" width="12" height="52" rx="3" fill="${c('legs', '#564d44')}"/>
-    <rect x="32" y="145" width="17" height="11" rx="3" fill="${c('feet', '#3b332c')}"/>
-    <rect x="51" y="145" width="17" height="11" rx="3" fill="${c('feet', '#3b332c')}"/>
-    <circle cx="50" cy="30" r="14" fill="#e3bf95"/>
-    ${eq.head ? `<path d="M35 31 A15 15 0 0 1 65 31 Z" fill="${col(eq.head.rarity)}"/>` : ''}
-    ${eq.necklace ? `<path d="M42 46 Q50 56 58 46" stroke="${col(eq.necklace.rarity)}" stroke-width="2" fill="none"/><circle cx="50" cy="53" r="3" fill="${col(eq.necklace.rarity)}"/>` : ''}
-    ${eq.sword ? `<line x1="82" y1="92" x2="82" y2="40" stroke="#d6dbe2" stroke-width="3.5" stroke-linecap="round"/>
-      <line x1="75" y1="92" x2="89" y2="92" stroke="${col(eq.sword.rarity)}" stroke-width="3" stroke-linecap="round"/>
-      <line x1="82" y1="92" x2="82" y2="102" stroke="#6b4f35" stroke-width="3.5" stroke-linecap="round"/>` : ''}
-    ${eq.shield ? `<path d="M8 76 L30 76 L30 96 Q30 110 19 116 Q8 110 8 96 Z" fill="${col(eq.shield.rarity)}" stroke="#2a2f38" stroke-width="1.5"/>` : ''}
-  </svg>`;
 }
 
 function render() {
@@ -409,12 +625,15 @@ function render() {
     const it = state.equipped[k];
     const cls = ['slot', it ? `b-${it.rarity}` : 'empty', selected === k ? 'selected' : ''].join(' ');
     return `<button class="${cls}" style="grid-area:${k}" data-act="select" data-slot="${k}">
-      <div class="lbl">${SLOTS[k].label}</div>
-      ${it ? `<div class="nm r-${it.rarity}">${esc(it.name)}</div><div class="st">${statLines(it).join(', ')}</div>`
-           : `<div class="st">Empty</div>`}
+      <div class="icon-box ${it ? `bg-${it.rarity}` : ''}">${icon(SLOTS[k].type)}</div>
+      <div class="txt">
+        <div class="lbl">${SLOTS[k].label}</div>
+        ${it ? `<div class="nm r-${it.rarity}">${esc(it.name)}</div><div class="st">${statLines(it).join(', ')}</div>`
+             : `<div class="st">Empty</div>`}
+      </div>
     </button>`;
   }).join('');
-  document.getElementById('doll').innerHTML = doll + `<div class="fig">${figureSvg()}</div>`;
+  document.getElementById('doll').innerHTML = doll + `<div class="fig">${icon('hero', 'hero')}</div>`;
 
   // Detail for the selected equipped item
   const det = document.getElementById('detail');
